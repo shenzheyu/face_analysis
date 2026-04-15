@@ -123,11 +123,3 @@ export async function listFaces(): Promise<{ records: FaceRecordOut[]; count: nu
 export async function deleteFace(id: string): Promise<void> {
   await api.delete(`/recognize/${id}`);
 }
-
-export async function swapFaces(sourceImage: File, targetImage: File): Promise<Blob> {
-  const form = new FormData();
-  form.append("source_image", sourceImage);
-  form.append("target_image", targetImage);
-  const r = await api.post("/swap", form, { responseType: "blob" });
-  return r.data as Blob;
-}

@@ -3,15 +3,13 @@ import { getHealth, type HealthResponse } from "./api/client";
 import { DetectPage } from "./pages/DetectPage";
 import { AnalyzePage } from "./pages/AnalyzePage";
 import { RecognizePage } from "./pages/RecognizePage";
-import { SwapPage } from "./pages/SwapPage";
 
-type Tab = "detect" | "analyze" | "recognize" | "swap";
+type Tab = "detect" | "analyze" | "recognize";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "detect", label: "Detect" },
   { key: "analyze", label: "Analyze" },
   { key: "recognize", label: "Recognize" },
-  { key: "swap", label: "Swap" },
 ];
 
 export default function App() {
@@ -38,9 +36,6 @@ export default function App() {
                   ? `GPU${health.device_id >= 0 ? ` #${health.device_id}` : ""}`
                   : "CPU"}
               </span>
-              <span className={`chip ${health.swapper ? "ok" : "warn"}`}>
-                swap {health.swapper ? "on" : "off"}
-              </span>
               <span className="chip">{health.db_count} enrolled</span>
             </>
           )}
@@ -62,12 +57,6 @@ export default function App() {
       {tab === "detect" && <DetectPage />}
       {tab === "analyze" && <AnalyzePage />}
       {tab === "recognize" && <RecognizePage />}
-      {tab === "swap" && (
-        <SwapPage
-          swapperAvailable={!!health?.swapper}
-          swapperError={health?.swapper_error ?? null}
-        />
-      )}
     </div>
   );
 }
