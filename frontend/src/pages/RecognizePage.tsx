@@ -6,8 +6,9 @@ import {
   listFaces,
   searchFace,
   type FaceRecordOut,
-  type SearchHit,
+  type SearchResponse,
 } from "../api/client";
+import { FaceCanvas } from "../components/FaceCanvas";
 import { ImageUploader } from "../components/ImageUploader";
 import { CameraCapture } from "../components/CameraCapture";
 import { LiveSearch } from "../components/LiveSearch";
@@ -111,8 +112,7 @@ function EnrollSection() {
 function SearchSection() {
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<"upload" | "camera" | "live">("upload");
-  const [hits, setHits] = useState<SearchHit[] | null>(null);
-  const [threshold, setThreshold] = useState(0);
+  const [result, setResult] = useState<SearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -131,11 +131,9 @@ function SearchSection() {
     if (!file) return;
     setLoading(true);
     setError(null);
-    setHits(null);
+    setResult(null);
     try {
-      const r = await searchFace(file, 5);
-      setHits(r.hits);
-      setThreshold(r.threshold);
+      setResult(await searchFace(file, 3));
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "search failed");
     } finally {
@@ -151,29 +149,29 @@ function SearchSection() {
           <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
             <button
               className={`tab${mode === "upload" ? " active" : ""}`}
-              onClick={() => { setMode("upload"); setFile(null); setHits(null); }}
+              onClick={() => { setMode("upload"); setFile(null); setResult(null); }}
             >
               Upload
             </button>
             <button
               className={`tab${mode === "camera" ? " active" : ""}`}
-              onClick={() => { setMode("camera"); setFile(null); setHits(null); }}
+              onClick={() => { setMode("camera"); setFile(null); setResult(null); }}
             >
               Camera
             </button>
             <button
               className={`tab${mode === "live" ? " active" : ""}`}
-              onClick={() => { setMode("live"); setFile(null); setHits(null); }}
+              onClick={() => { setMode("live"); setFile(null); setResult(null); }}
             >
               Live
             </button>
           </div>
           {mode === "upload" && (
-            <ImageUploader file={file} onChange={(f) => { setFile(f); setHits(null); }} label="Upload query photo" />
+            <ImageUploader file={file} onChange={(f) => { setFile(f); setResult(null); }} label="Upload query photo" />
           )}
           {mode === "camera" && (
             <>
-              <CameraCapture onCapture={(f) => { setFile(f); setHits(null); }} />
+              <CameraCapture onCapture={(f) => { setFile(f); setResult(null); }} />
               {previewUrl && (
                 <div style={{ marginTop: 10 }}>
                   <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Captured frame:</div>
@@ -191,23 +189,48 @@ function SearchSection() {
           {error && <div className="error">{error}</div>}
         </div>
         <div className="col">
-          {hits && hits.length === 0 && <div className="muted">No matches.</div>}
-          {hits && hits.length > 0 && (
-            <ul className="face-list">
-              {hits.map((h) => {
-                const above = h.similarity >= threshold;
-                return (
-                  <li key={h.id}>
-                    <span>{h.name}</span>
-                    <span className={above ? "success" : "muted"}>
-                      {h.similarity.toFixed(3)} {above ? "✓" : ""}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
+          {mode !== "live" && result && file && (
+            <>
+              <FaceCanvas file={file} faces={result.faces} width={result.width} height={result.height} />
+              <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>
+                {result.faces.length} face(s) detected · threshold={result.threshold}
+              </div>
+              <div className="stack" style={{ marginTop: 10 }}>
+                {result.faces.map((f, i) => {
+                  const top = f.hits[0];
+                  const recognized = top && top.similarity >= result.threshold;
+                  return (
+                    <div key={i} style={{ padding: 10, background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 6 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <strong>Face #{i + 1}</strong>
+                        <span className={recognized ? "success" : "muted"} style={{ fontSize: 12 }}>
+                          {recognized ? `${top.name} ${top.similarity.toFixed(3)} ✓` : top ? `best: ${top.name} ${top.similarity.toFixed(3)}` : "no matches"}
+                        </span>
+                      </div>
+                      {f.hits.length > 0 && (
+                        <ul className="face-list">
+                          {f.hits.map((h) => {
+                            const above = h.similarity >= result.threshold;
+                            return (
+                              <li key={h.id}>
+                                <span>{h.name}</span>
+                                <span className={above ? "success" : "muted"}>
+                                  {h.similarity.toFixed(3)} {above ? "✓" : ""}
+                                </span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
-          {hits && <div className="muted" style={{ marginTop: 6, fontSize: 12 }}>threshold={threshold}</div>}
+          {mode !== "live" && result && result.faces.length === 0 && (
+            <div className="muted">No face detected in the image.</div>
+          )}
         </div>
       </div>
     </div>

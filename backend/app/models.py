@@ -55,8 +55,17 @@ class SearchHit(BaseModel):
     similarity: float
 
 
-class SearchResponse(BaseModel):
+class SearchFaceResult(BaseModel):
+    bbox: BBox
+    kps: list[list[float]]
+    det_score: float
     hits: list[SearchHit]
+
+
+class SearchResponse(BaseModel):
+    faces: list[SearchFaceResult]
+    width: int
+    height: int
     threshold: float
 
 

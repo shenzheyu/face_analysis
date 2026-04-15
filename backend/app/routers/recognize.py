@@ -10,6 +10,7 @@ from ..models import (
     EnrollResponse,
     FaceRecordOut,
     ListResponse,
+    SearchFaceResult,
     SearchHit,
     SearchResponse,
     StreamFace,
@@ -45,12 +46,30 @@ async def enroll(
 @router.post("/search", response_model=SearchResponse)
 async def search(
     image: UploadFile = File(...),
-    top_k: int = Form(default=5),
+    top_k: int = Form(default=3),
 ) -> SearchResponse:
-    emb = _extract_embedding(await image.read())
-    hits = db.search(emb, top_k=top_k)
+    img = decode_image(await image.read())
+    h, w = img.shape[:2]
+    faces = engine.get_faces(img)
+    out: list[SearchFaceResult] = []
+    for f in faces:
+        if not hasattr(f, "normed_embedding"):
+            continue
+        emb = np.asarray(f.normed_embedding, dtype=np.float32)
+        hits = db.search(emb, top_k=top_k)
+        x1, y1, x2, y2 = f.bbox.tolist()
+        out.append(
+            SearchFaceResult(
+                bbox=BBox(x1=x1, y1=y1, x2=x2, y2=y2),
+                kps=f.kps.tolist(),
+                det_score=float(f.det_score),
+                hits=[SearchHit(id=r.id, name=r.name, similarity=s) for r, s in hits],
+            )
+        )
     return SearchResponse(
-        hits=[SearchHit(id=r.id, name=r.name, similarity=s) for r, s in hits],
+        faces=out,
+        width=w,
+        height=h,
         threshold=config.FACE_SIM_THRESHOLD,
     )
 

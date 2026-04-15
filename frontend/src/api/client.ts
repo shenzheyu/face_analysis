@@ -93,14 +93,25 @@ export async function enrollFace(
   return r.data;
 }
 
-export async function searchFace(
-  file: File,
-  topK = 5
-): Promise<{ hits: SearchHit[]; threshold: number }> {
+export interface SearchFaceResult {
+  bbox: BBox;
+  kps: number[][];
+  det_score: number;
+  hits: SearchHit[];
+}
+
+export interface SearchResponse {
+  faces: SearchFaceResult[];
+  width: number;
+  height: number;
+  threshold: number;
+}
+
+export async function searchFace(file: File, topK = 3): Promise<SearchResponse> {
   const form = new FormData();
   form.append("image", file);
   form.append("top_k", String(topK));
-  const r = await api.post("/recognize/search", form);
+  const r = await api.post<SearchResponse>("/recognize/search", form);
   return r.data;
 }
 
