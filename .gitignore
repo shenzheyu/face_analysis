@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.python-version.local
+
+# uv
+# keep uv.lock committed, ignore caches
+.uv/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Data & models
+backend/data/face_db.json
+backend/data/models/*.onnx
+backend/data/uploads/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Env
+.env
+.env.local

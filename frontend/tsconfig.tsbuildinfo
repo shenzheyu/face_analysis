@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/api/client.ts","./src/components/FaceCanvas.tsx","./src/components/ImageUploader.tsx","./src/components/ResultPanel.tsx","./src/pages/AnalyzePage.tsx","./src/pages/DetectPage.tsx","./src/pages/RecognizePage.tsx","./src/pages/SwapPage.tsx"],"version":"5.9.3"}
