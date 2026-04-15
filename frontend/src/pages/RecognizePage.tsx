@@ -24,9 +24,21 @@ export function RecognizePage() {
 
 function EnrollSection() {
   const [file, setFile] = useState<File | null>(null);
+  const [mode, setMode] = useState<"upload" | "camera">("upload");
   const [name, setName] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   const run = async () => {
     if (!file || !name.trim()) return;
@@ -50,7 +62,33 @@ function EnrollSection() {
       <h2>Enroll</h2>
       <div className="row">
         <div className="col">
-          <ImageUploader file={file} onChange={setFile} label="Upload a clear face photo" />
+          <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+            <button
+              className={`tab${mode === "upload" ? " active" : ""}`}
+              onClick={() => { setMode("upload"); setFile(null); }}
+            >
+              Upload
+            </button>
+            <button
+              className={`tab${mode === "camera" ? " active" : ""}`}
+              onClick={() => { setMode("camera"); setFile(null); }}
+            >
+              Camera
+            </button>
+          </div>
+          {mode === "upload" ? (
+            <ImageUploader file={file} onChange={setFile} label="Upload a clear face photo" />
+          ) : (
+            <>
+              <CameraCapture onCapture={setFile} />
+              {previewUrl && (
+                <div style={{ marginTop: 10 }}>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Captured frame:</div>
+                  <img src={previewUrl} alt="captured" style={{ width: "100%", borderRadius: 6 }} />
+                </div>
+              )}
+            </>
+          )}
         </div>
         <div className="col">
           <div className="stack">
