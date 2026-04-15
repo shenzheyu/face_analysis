@@ -9,6 +9,7 @@ import {
   type SearchHit,
 } from "../api/client";
 import { ImageUploader } from "../components/ImageUploader";
+import { CameraCapture } from "../components/CameraCapture";
 
 export function RecognizePage() {
   return (
@@ -70,10 +71,22 @@ function EnrollSection() {
 
 function SearchSection() {
   const [file, setFile] = useState<File | null>(null);
+  const [mode, setMode] = useState<"upload" | "camera">("upload");
   const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [threshold, setThreshold] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
 
   const run = async () => {
     if (!file) return;
@@ -96,7 +109,33 @@ function SearchSection() {
       <h2>Search (1:N)</h2>
       <div className="row">
         <div className="col">
-          <ImageUploader file={file} onChange={(f) => { setFile(f); setHits(null); }} label="Upload query photo" />
+          <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
+            <button
+              className={`tab${mode === "upload" ? " active" : ""}`}
+              onClick={() => { setMode("upload"); setFile(null); setHits(null); }}
+            >
+              Upload
+            </button>
+            <button
+              className={`tab${mode === "camera" ? " active" : ""}`}
+              onClick={() => { setMode("camera"); setFile(null); setHits(null); }}
+            >
+              Camera
+            </button>
+          </div>
+          {mode === "upload" ? (
+            <ImageUploader file={file} onChange={(f) => { setFile(f); setHits(null); }} label="Upload query photo" />
+          ) : (
+            <>
+              <CameraCapture onCapture={(f) => { setFile(f); setHits(null); }} />
+              {previewUrl && (
+                <div style={{ marginTop: 10 }}>
+                  <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>Captured frame:</div>
+                  <img src={previewUrl} alt="captured" style={{ width: "100%", borderRadius: 6 }} />
+                </div>
+              )}
+            </>
+          )}
           <button className="btn" disabled={!file || loading} onClick={run} style={{ marginTop: 10 }}>
             {loading ? "Searching…" : "Search"}
           </button>
