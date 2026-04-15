@@ -66,6 +66,26 @@ class CompareResponse(BaseModel):
     threshold: float
 
 
+class StreamHit(BaseModel):
+    id: str | None = None
+    name: str | None = None
+    similarity: float
+
+
+class StreamFace(BaseModel):
+    bbox: BBox
+    kps: list[list[float]]
+    det_score: float
+    hit: StreamHit | None = None
+
+
+class StreamResponse(BaseModel):
+    faces: list[StreamFace]
+    width: int
+    height: int
+    threshold: float
+
+
 class HealthResponse(BaseModel):
     detector: bool
     swapper: bool

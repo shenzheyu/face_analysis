@@ -104,6 +104,33 @@ export async function searchFace(
   return r.data;
 }
 
+export interface StreamHit {
+  id: string | null;
+  name: string | null;
+  similarity: number;
+}
+
+export interface StreamFace {
+  bbox: BBox;
+  kps: number[][];
+  det_score: number;
+  hit: StreamHit | null;
+}
+
+export interface StreamResponse {
+  faces: StreamFace[];
+  width: number;
+  height: number;
+  threshold: number;
+}
+
+export async function recognizeStream(frame: Blob): Promise<StreamResponse> {
+  const form = new FormData();
+  form.append("image", frame, "frame.jpg");
+  const r = await api.post<StreamResponse>("/recognize/stream", form, { timeout: 15000 });
+  return r.data;
+}
+
 export async function compareFaces(
   image1: File,
   image2: File

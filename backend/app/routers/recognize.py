@@ -5,12 +5,16 @@ from .. import config
 from ..face_db import cosine_similarity, db
 from ..face_engine import decode_image, engine
 from ..models import (
+    BBox,
     CompareResponse,
     EnrollResponse,
     FaceRecordOut,
     ListResponse,
     SearchHit,
     SearchResponse,
+    StreamFace,
+    StreamHit,
+    StreamResponse,
 )
 
 router = APIRouter(prefix="/recognize")
@@ -64,6 +68,35 @@ async def compare(
         is_same=sim >= config.FACE_SIM_THRESHOLD,
         threshold=config.FACE_SIM_THRESHOLD,
     )
+
+
+@router.post("/stream", response_model=StreamResponse)
+async def stream(image: UploadFile = File(...)) -> StreamResponse:
+    img = decode_image(await image.read())
+    h, w = img.shape[:2]
+    faces = engine.get_faces(img)
+    out: list[StreamFace] = []
+    for f in faces:
+        x1, y1, x2, y2 = f.bbox.tolist()
+        hit: StreamHit | None = None
+        if hasattr(f, "normed_embedding"):
+            emb = np.asarray(f.normed_embedding, dtype=np.float32)
+            top = db.search(emb, top_k=1)
+            if top:
+                rec, sim = top[0]
+                if sim >= config.FACE_SIM_THRESHOLD:
+                    hit = StreamHit(id=rec.id, name=rec.name, similarity=sim)
+                else:
+                    hit = StreamHit(similarity=sim)
+        out.append(
+            StreamFace(
+                bbox=BBox(x1=x1, y1=y1, x2=x2, y2=y2),
+                kps=f.kps.tolist(),
+                det_score=float(f.det_score),
+                hit=hit,
+            )
+        )
+    return StreamResponse(faces=out, width=w, height=h, threshold=config.FACE_SIM_THRESHOLD)
 
 
 @router.get("/list", response_model=ListResponse)

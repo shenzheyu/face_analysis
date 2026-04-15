@@ -10,6 +10,7 @@ import {
 } from "../api/client";
 import { ImageUploader } from "../components/ImageUploader";
 import { CameraCapture } from "../components/CameraCapture";
+import { LiveSearch } from "../components/LiveSearch";
 
 export function RecognizePage() {
   return (
@@ -109,7 +110,7 @@ function EnrollSection() {
 
 function SearchSection() {
   const [file, setFile] = useState<File | null>(null);
-  const [mode, setMode] = useState<"upload" | "camera">("upload");
+  const [mode, setMode] = useState<"upload" | "camera" | "live">("upload");
   const [hits, setHits] = useState<SearchHit[] | null>(null);
   const [threshold, setThreshold] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -160,10 +161,17 @@ function SearchSection() {
             >
               Camera
             </button>
+            <button
+              className={`tab${mode === "live" ? " active" : ""}`}
+              onClick={() => { setMode("live"); setFile(null); setHits(null); }}
+            >
+              Live
+            </button>
           </div>
-          {mode === "upload" ? (
+          {mode === "upload" && (
             <ImageUploader file={file} onChange={(f) => { setFile(f); setHits(null); }} label="Upload query photo" />
-          ) : (
+          )}
+          {mode === "camera" && (
             <>
               <CameraCapture onCapture={(f) => { setFile(f); setHits(null); }} />
               {previewUrl && (
@@ -174,9 +182,12 @@ function SearchSection() {
               )}
             </>
           )}
-          <button className="btn" disabled={!file || loading} onClick={run} style={{ marginTop: 10 }}>
-            {loading ? "Searching…" : "Search"}
-          </button>
+          {mode === "live" && <LiveSearch />}
+          {mode !== "live" && (
+            <button className="btn" disabled={!file || loading} onClick={run} style={{ marginTop: 10 }}>
+              {loading ? "Searching…" : "Search"}
+            </button>
+          )}
           {error && <div className="error">{error}</div>}
         </div>
         <div className="col">
